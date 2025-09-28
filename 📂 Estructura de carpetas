@@ -1,0 +1,8 @@
+igotyouscanner/
+├── igotyouscanner/
+│   ├── __init__.py
+│   ├── core.py
+│   └── cli.py
+├── requirements.txt
+├── setup.py
+└── README.md
