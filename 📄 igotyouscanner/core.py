@@ -1,0 +1,75 @@
+import os
+import hashlib
+import psutil
+import time
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+import scapy.all as scapy
+
+# Base de datos de hashes de malware (ejemplo)
+malware_hashes = {
+    "44d88612fea8a8f36de82e1278abb02f",
+    "e99a18c428cb38d5f260853678922e03"
+}
+
+def calcular_hash(archivo):
+    hasher = hashlib.md5()
+    try:
+        with open(archivo, "rb") as f:
+            while chunk := f.read(4096):
+                hasher.update(chunk)
+        return hasher.hexdigest()
+    except Exception:
+        return None
+
+def escanear_carpeta(ruta):
+    print(f"[INFO] Escaneando: {ruta}")
+    for root, _, files in os.walk(ruta):
+        for file in files:
+            archivo_path = os.path.join(root, file)
+            file_hash = calcular_hash(archivo_path)
+            if file_hash and file_hash in malware_hashes:
+                print(f"[ALERTA] Malware detectado: {archivo_path}")
+
+def detectar_procesos():
+    procesos_sospechosos = ["keylogger.exe", "trojan.exe", "rat.exe"]
+    for proceso in psutil.process_iter(attrs=['pid', 'name']):
+        try:
+            if proceso.info['name'].lower() in procesos_sospechosos:
+                print(f"[ALERTA] Proceso sospechoso detectado: {proceso.info['name']} (PID: {proceso.info['pid']})")
+        except psutil.NoSuchProcess:
+            pass
+
+class MonitorArchivos(FileSystemEventHandler):
+    def on_created(self, event):
+        if not event.is_directory:
+            print(f"[MONITOR] Nuevo archivo detectado: {event.src_path}")
+            file_hash = calcular_hash(event.src_path)
+            if file_hash and file_hash in malware_hashes:
+                print(f"[ALERTA] Malware detectado en: {event.src_path}")
+
+def iniciar_monitor(ruta_a_monitorear):
+    event_handler = MonitorArchivos()
+    observer = Observer()
+    observer.schedule(event_handler, ruta_a_monitorear, recursive=True)
+    observer.start()
+    try:
+        while True:
+            detectar_procesos()
+            time.sleep(10)
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
+
+def analizar_paquetes(paquete):
+    if paquete.haslayer(scapy.TCP) and paquete.haslayer(scapy.Raw):
+        payload = paquete[scapy.Raw].load
+        palabras_clave = [b"password", b"malware", b"spyware"]
+        for palabra in palabras_clave:
+            if palabra in payload.lower():
+                print(f"[ALERTA] Tráfico sospechoso detectado: {payload[:200]}")
+                break
+
+def iniciar_sniffer():
+    print("[INFO] Iniciando sniffer de red...")
+    scapy.sniff(store=False, prn=analizar_paquetes)
