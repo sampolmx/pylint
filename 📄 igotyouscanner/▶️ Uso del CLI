@@ -1,0 +1,8 @@
+# Escanear una carpeta
+igotyouscanner --scan /ruta/a/escaneo
+
+# Monitorizar una carpeta
+igotyouscanner --monitor /ruta/a/monitorear
+
+# Iniciar sniffer de red
+sudo igotyouscanner --sniffer
