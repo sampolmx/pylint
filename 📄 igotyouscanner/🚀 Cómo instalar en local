@@ -1,0 +1,3 @@
+git clone https://github.com/tuusuario/igotyouscanner.git
+cd igotyouscanner
+pip install -e .
